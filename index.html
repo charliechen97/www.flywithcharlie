@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行目的地选择器 - 决定去哪儿玩</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        japan: '#FF9EBB',
+                        korea: '#87CEEB',
+                        vietnam: '#90EE90',
+                        thailand: '#FFD700',
+                        northeast: '#87CEEB',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-in-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+            .backdrop-blur-sm {
+                backdrop-filter: blur(4px);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+    <style>
+        /* 自定义样式 */
+        .destination-card {
+            transition: all 0.3s ease;
+        }
+        .destination-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .preference-tag {
+            transition: all 0.2s ease;
+        }
+        .preference-tag:hover, .preference-tag.active {
+            transform: scale(1.05);
+        }
+        .destination-badge {
+            transition: all 0.3s ease;
+        }
+        .destination-badge:hover {
+            transform: rotate(5deg);
+        }
+        .bg-gradient-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%);
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-md fixed w-full z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-globe text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">旅行目的地选择器</h1>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#destinations" class="text-gray-600 hover:text-primary transition-colors">目的地</a>
+                <a href="#preferences" class="text-gray-600 hover:text-primary transition-colors">偏好选择</a>
+                <a href="#comparison" class="text-gray-600 hover:text-primary transition-colors">目的地对比</a>
+                <a href="#inspiration" class="text-gray-600 hover:text-primary transition-colors">旅行灵感</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-600 hover:text-primary">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg absolute w-full">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#destinations" class="text-gray-600 hover:text-primary transition-colors py-2">目的地</a>
+                <a href="#preferences" class="text-gray-600 hover:text-primary transition-colors py-2">偏好选择</a>
+                <a href="#comparison" class="text-gray-600 hover:text-primary transition-colors py-2">目的地对比</a>
+                <a href="#inspiration" class="text-gray-600 hover:text-primary transition-colors py-2">旅行灵感</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <header class="pt-16 pb-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 text-shadow-lg animate-fade-in">
+                决定去哪儿玩？
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-shadow animate-slide-up">
+                无论是日本的樱花、韩国的潮流、越南的自然、泰国的文化还是中国东北的雪景，
+                我们都能帮你找到最适合的旅行目的地！
+            </p>
+            <div class="flex justify-center">
+                <a href="#preferences" class="bg-white text-primary font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    开始探索 <i class="fa fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 目的地展示区 -->
+    <section id="destinations" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">热门旅行目的地</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                <!-- 日本 -->
+                <div class="destination-card bg-white rounded-xl overflow-hidden shadow-lg group">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/926375594844618756~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=F5cRjR%2BOCMDkMHxDhIAcFkklMw4%3D" 
+                             alt="日本樱花" 
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-4">
+                            <h3 class="text-xl font-bold text-white">日本</h3>
+                            <p class="text-white text-sm">樱花、温泉与传统文化</p>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="destination-badge bg-japan/20 text-japan text-xs px-2 py-1 rounded-full">樱花</span>
+                            <span class="destination-badge bg-japan/20 text-japan text-xs px-2 py-1 rounded-full">温泉</span>
+                            <span class="destination-badge bg-japan/20 text-japan text-xs px-2 py-1 rounded-full">美食</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">探索日本的传统文化与现代都市的完美融合，欣赏美丽的樱花，享受温泉，品尝世界级美食。</p>
+                        <button class="view-details text-primary font-medium text-sm hover:underline flex items-center" data-destination="japan">
+                            查看详情 <i class="fa fa-angle-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 韩国 -->
+                <div class="destination-card bg-white rounded-xl overflow-hidden shadow-lg group">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/mosaic-legacy/dd8000281751ba8674b~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=shPw0bXKQNuiNarVn%2FSpFk4gFfg%3D" 
+                             alt="韩国首尔" 
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-4">
+                            <h3 class="text-xl font-bold text-white">韩国</h3>
+                            <p class="text-white text-sm">潮流、历史与美食</p>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="destination-badge bg-korea/20 text-korea text-xs px-2 py-1 rounded-full">韩流</span>
+                            <span class="destination-badge bg-korea/20 text-korea text-xs px-2 py-1 rounded-full">购物</span>
+                            <span class="destination-badge bg-korea/20 text-korea text-xs px-2 py-1 rounded-full">历史</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">体验韩国的现代潮流文化，探索悠久的历史古迹，品尝正宗的韩式料理，享受购物天堂的乐趣。</p>
+                        <button class="view-details text-primary font-medium text-sm hover:underline flex items-center" data-destination="korea">
+                            查看详情 <i class="fa fa-angle-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 越南 -->
+                <div class="destination-card bg-white rounded-xl overflow-hidden shadow-lg group">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/labis/53f306fad99c2f5be63762ae5f3b4741~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=%2B0QByc4kt%2Fd%2Bx6%2FKCfBncshqDtI%3D" 
+                             alt="越南下龙湾" 
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-4">
+                            <h3 class="text-xl font-bold text-white">越南</h3>
+                            <p class="text-white text-sm">自然、海滩与美食</p>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="destination-badge bg-vietnam/20 text-vietnam text-xs px-2 py-1 rounded-full">海滩</span>
+                            <span class="destination-badge bg-vietnam/20 text-vietnam text-xs px-2 py-1 rounded-full">自然</span>
+                            <span class="destination-badge bg-vietnam/20 text-vietnam text-xs px-2 py-1 rounded-full">咖啡</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">探索越南的自然美景，享受宁静的海滩，品尝美味的越南河粉和咖啡，体验独特的文化魅力。</p>
+                        <button class="view-details text-primary font-medium text-sm hover:underline flex items-center" data-destination="vietnam">
+                            查看详情 <i class="fa fa-angle-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 泰国 -->
+                <div class="destination-card bg-white rounded-xl overflow-hidden shadow-lg group">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/2270680094861033514~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=zXllbQHvT0n7Nn4BFZ9Y%2FtZL%2Fww%3D" 
+                             alt="泰国寺庙" 
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-4">
+                            <h3 class="text-xl font-bold text-white">泰国</h3>
+                            <p class="text-white text-sm">文化、海滩与美食</p>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="destination-badge bg-thailand/20 text-thailand text-xs px-2 py-1 rounded-full">寺庙</span>
+                            <span class="destination-badge bg-thailand/20 text-thailand text-xs px-2 py-1 rounded-full">海滩</span>
+                            <span class="destination-badge bg-thailand/20 text-thailand text-xs px-2 py-1 rounded-full">美食</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">探索泰国的佛教文化，享受美丽的海滩，品尝辛辣美味的泰国菜，体验热情好客的泰国人民。</p>
+                        <button class="view-details text-primary font-medium text-sm hover:underline flex items-center" data-destination="thailand">
+                            查看详情 <i class="fa fa-angle-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 中国东北 -->
+                <div class="destination-card bg-white rounded-xl overflow-hidden shadow-lg group">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/937555171373088799~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=JNbC45Sxmdat9sBZOzlSiJ7RkoY%3D" 
+                             alt="中国东北雪景" 
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-4">
+                            <h3 class="text-xl font-bold text-white">中国东北</h3>
+                            <p class="text-white text-sm">雪景、温泉与文化</p>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="destination-badge bg-northeast/20 text-northeast text-xs px-2 py-1 rounded-full">雪景</span>
+                            <span class="destination-badge bg-northeast/20 text-northeast text-xs px-2 py-1 rounded-full">温泉</span>
+                            <span class="destination-badge bg-northeast/20 text-northeast text-xs px-2 py-1 rounded-full">文化</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">探索中国东北的冰雪奇观，享受温泉，体验独特的东北文化和美食，感受冬季的魅力。</p>
+                        <button class="view-details text-primary font-medium text-sm hover:underline flex items-center" data-destination="northeast">
+                            查看详情 <i class="fa fa-angle-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 偏好选择区 -->
+    <section id="preferences" class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">选择你的旅行偏好</h2>
+            <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto">告诉我们你喜欢的旅行体验，我们将为你推荐最适合的目的地！</p>
+            
+            <div class="max-w-4xl mx-auto">
+                <!-- 兴趣类型 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">你对哪些类型的体验感兴趣？</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="culture">
+                            <i class="fa fa-university mr-2"></i>文化体验
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="nature">
+                            <i class="fa fa-tree mr-2"></i>自然风光
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="food">
+                            <i class="fa fa-cutlery mr-2"></i>美食探索
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="shopping">
+                            <i class="fa fa-shopping-bag mr-2"></i>购物血拼
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="adventure">
+                            <i class="fa fa-plane mr-2"></i>冒险活动
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="relaxation">
+                            <i class="fa fa-coffee mr-2"></i>休闲放松
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 旅行季节 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">你计划在哪个季节旅行？</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="spring">
+                            <i class="fa fa-pagelines mr-2"></i>春季
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="summer">
+                            <i class="fa fa-sun-o mr-2"></i>夏季
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="autumn">
+                            <i class="fa fa-leaf mr-2"></i>秋季
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="winter">
+                            <i class="fa fa-snowflake-o mr-2"></i>冬季
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 旅行预算 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">你的旅行预算是？</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="budget">
+                            <i class="fa fa-money mr-2"></i>经济实惠
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="mid-range">
+                            <i class="fa fa-credit-card mr-2"></i>中等预算
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="luxury">
+                            <i class="fa fa-diamond mr-2"></i>豪华享受
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 旅行时长 -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold mb-4">你计划旅行多久？</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="short">
+                            <i class="fa fa-calendar-check-o mr-2"></i>短期 (3-5天)
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="medium">
+                            <i class="fa fa-calendar-plus-o mr-2"></i>中期 (7-10天)
+                        </div>
+                        <div class="preference-tag bg-white shadow-md rounded-full px-4 py-2 cursor-pointer hover:bg-primary hover:text-white transition-colors" data-preference="long">
+                            <i class="fa fa-calendar mr-2"></i>长期 (14天以上)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 推荐按钮 -->
+                <div class="text-center">
+                    <button id="recommend-button" class="bg-primary text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                        为我推荐目的地 <i class="fa fa-magic ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 推荐结果区 -->
+    <section id="results" class="py-16 bg-white hidden">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">为你推荐的目的地</h2>
+            <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto">根据你的偏好，我们认为这些目的地最适合你！</p>
+            
+            <div class="max-w-5xl mx-auto">
+                <!-- 推荐结果卡片 -->
+                <div id="recommendation-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- 推荐结果将通过JavaScript动态生成 -->
+                </div>
+                
+                <!-- 查看更多按钮 -->
+                <div class="text-center mt-12">
+                    <button id="view-all-button" class="bg-white text-primary border border-primary font-bold py-3 px-8 rounded-full shadow hover:bg-primary hover:text-white transition-colors">
+                        查看所有目的地 <i class="fa fa-th-large ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 目的地对比区 -->
+    <section id="comparison" class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">目的地对比</h2>
+            <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto">选择多个目的地进行对比，帮助你做出更明智的选择！</p>
+            
+            <div class="max-w-5xl mx-auto">
+                <!-- 目的地选择器 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-xl font-semibold mb-4">选择要对比的目的地</h3>
+                    <div class="flex flex-wrap gap-3 mb-6">
+                        <div class="destination-selector flex items-center bg-gray-100 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 transition-colors" data-destination="japan">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-primary rounded mr-2" id="compare-japan">
+                            <label for="compare-japan" class="cursor-pointer">日本</label>
+                        </div>
+                        <div class="destination-selector flex items-center bg-gray-100 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 transition-colors" data-destination="korea">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-primary rounded mr-2" id="compare-korea">
+                            <label for="compare-korea" class="cursor-pointer">韩国</label>
+                        </div>
+                        <div class="destination-selector flex items-center bg-gray-100 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 transition-colors" data-destination="vietnam">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-primary rounded mr-2" id="compare-vietnam">
+                            <label for="compare-vietnam" class="cursor-pointer">越南</label>
+                        </div>
+                        <div class="destination-selector flex items-center bg-gray-100 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 transition-colors" data-destination="thailand">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-primary rounded mr-2" id="compare-thailand">
+                            <label for="compare-thailand" class="cursor-pointer">泰国</label>
+                        </div>
+                        <div class="destination-selector flex items-center bg-gray-100 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 transition-colors" data-destination="northeast">
+                            <input type="checkbox" class="form-checkbox h-4 w-4 text-primary rounded mr-2" id="compare-northeast">
+                            <label for="compare-northeast" class="cursor-pointer">中国东北</label>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button id="compare-button" class="bg-primary text-white font-bold py-2 px-6 rounded-full shadow hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            开始对比 <i class="fa fa-bar-chart ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 对比结果 -->
+                <div id="comparison-results" class="hidden">
+                    <!-- 雷达图对比 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                        <h3 class="text-xl font-semibold mb-4">目的地特色对比</h3>
+                        <div class="h-80">
+                            <canvas id="radar-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 详细对比表格 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 overflow-x-auto">
+                        <h3 class="text-xl font-semibold mb-4">详细信息对比</h3>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">对比项目</th>
+                                    <th id="compare-destination-1" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-japan uppercase tracking-wider">日本</th>
+                                    <th id="compare-destination-2" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-korea uppercase tracking-wider">韩国</th>
+                                    <th id="compare-destination-3" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-vietnam uppercase tracking-wider hidden">越南</th>
+                                    <th id="compare-destination-4" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-thailand uppercase tracking-wider hidden">泰国</th>
+                                    <th id="compare-destination-5" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-northeast uppercase tracking-wider hidden">中国东北</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">最佳旅行季节</td>
+                                    <td id="season-1" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">春季 (3-5月)、秋季 (9-11月)</td>
+                                    <td id="season-2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">春季 (4-6月)、秋季 (9-11月)</td>
+                                    <td id="season-3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">冬季 (11-2月)、春季 (3-4月)</td>
+                                    <td id="season-4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">凉季 (11-2月)</td>
+                                    <td id="season-5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">冬季 (12-2月)</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">人均消费</td>
+                                    <td id="cost-1" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">较高</td>
+                                    <td id="cost-2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">中等</td>
+                                    <td id="cost-3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">较低</td>
+                                    <td id="cost-4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">中等</td>
+                                    <td id="cost-5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">中等</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">语言</td>
+                                    <td id="language-1" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">日语</td>
+                                    <td id="language-2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">韩语</td>
+                                    <td id="language-3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">越南语</td>
+                                    <td id="language-4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">泰语</td>
+                                    <td id="language-5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">中文</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">签证难度</td>
+                                    <td id="visa-1" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">中等</td>
+                                    <td id="visa-2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">中等</td>
+                                    <td id="visa-3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">容易</td>
+                                    <td id="visa-4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">容易</td>
+                                    <td id="visa-5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">无需签证</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">交通便利性</td>
+                                    <td id="transport-1" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">高</td>
+                                    <td id="transport-2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">高</td>
+                                    <td id="transport-3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">中等</td>
+                                    <td id="transport-4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">中等</td>
+                                    <td id="transport-5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden">高</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 旅行灵感墙 -->
+    <section id="inspiration" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">旅行灵感墙</h2>
+            <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto">探索其他旅行者的精彩瞬间，获取你的下一次旅行灵感！</p>
+            
+            <div class="max-w-6xl mx-auto">
+                <!-- 灵感图片墙 -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/labis/b424dcb7cf9e352bf145df32430b52cc~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=sWUpzZQfB2smDKi0pi7G0IVvcAQ%3D" 
+                             alt="日本樱花" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">日本京都</p>
+                                <p class="text-sm">樱花盛开的季节</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p3-doubao-search-sign.byteimg.com/pgc-image/153051343860414e2cc2472~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=8PCqNyWYPwRY8z%2B2c1KI6uiau5g%3D" 
+                             alt="韩国首尔" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">韩国首尔</p>
+                                <p class="text-sm">繁华的都市夜景</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/mosaic-legacy/4e6b00025d51e699e275~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=0wLL%2FpBvL5KUJEYrVmqWuUG%2F%2B%2BM%3D" 
+                             alt="越南下龙湾" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">越南下龙湾</p>
+                                <p class="text-sm">海上桂林的美景</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p3-doubao-search-sign.byteimg.com/labis/d7e0a3f2714837b4457d95486b932181~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=QO7anajFSwloYqLkMP0J3oOJ1B8%3D" 
+                             alt="泰国寺庙" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">泰国清迈</p>
+                                <p class="text-sm">宁静的佛教寺庙</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1054611258037370909~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=xReqDssbzw2lN24tbRazRY0iyVI%3D" 
+                             alt="中国东北雪景" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">中国长白山</p>
+                                <p class="text-sm">冬日的童话世界</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1008956597488320551~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=oztSLBu1TBVqYSKTE61%2BXHY4LiY%3D" 
+                             alt="泰国寺庙" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">泰国曼谷</p>
+                                <p class="text-sm">金碧辉煌的寺庙</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1051855452510486543~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=Bb5yvDr5eojr1fdubwCmFcTmiiU%3D" 
+                             alt="韩国首尔" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">韩国首尔</p>
+                                <p class="text-sm">城市与自然的结合</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspiration-item overflow-hidden rounded-lg group">
+                        <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/84ee4122084740d7afa3457e4951b67c~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=W%2FLqWWsvxhCJu2pCWcXzCWwVS6s%3D" 
+                             alt="越南下龙湾" 
+                             class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <div class="p-4 text-white">
+                                <p class="font-medium">越南下龙湾</p>
+                                <p class="text-sm">宁静的海湾风光</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 添加你的灵感按钮 -->
+                <div class="text-center mt-12">
+                    <button id="add-inspiration-button" class="bg-white text-primary border border-primary font-bold py-3 px-8 rounded-full shadow hover:bg-primary hover:text-white transition-colors">
+                        添加你的旅行灵感 <i class="fa fa-plus ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 目的地详情模态框 -->
+    <div id="destination-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="relative">
+                <button id="close-modal" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center z-10">
+                    <i class="fa fa-times"></i>
+                </button>
+                <div id="modal-content" class="p-6">
+                    <!-- 模态框内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加灵感模态框 -->
+    <div id="inspiration-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl max-w-2xl w-full">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">分享你的旅行灵感</h3>
+                    <button id="close-inspiration-modal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="inspiration-form">
+                    <div class="mb-4">
+                        <label for="inspiration-destination" class="block text-gray-700 font-medium mb-2">目的地</label>
+                        <select id="inspiration-destination" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">选择目的地</option>
+                            <option value="japan">日本</option>
+                            <option value="korea">韩国</option>
+                            <option value="vietnam">越南</option>
+                            <option value="thailand">泰国</option>
+                            <option value="northeast">中国东北</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="inspiration-title" class="block text-gray-700 font-medium mb-2">标题</label>
+                        <input type="text" id="inspiration-title" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="例如：东京五日游攻略">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="inspiration-description" class="block text-gray-700 font-medium mb-2">描述</label>
+                        <textarea id="inspiration-description" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="分享你的旅行体验和感受..."></textarea>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">上传图片</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                            <i class="fa fa-cloud-upload text-gray-400 text-3xl mb-2"></i>
+                            <p class="text-gray-500">点击或拖拽图片到此处上传</p>
+                            <p class="text-gray-400 text-sm mt-1">支持 JPG、PNG 格式，最大 5MB</p>
+                            <input type="file" id="inspiration-image" class="hidden" accept="image/*">
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="bg-primary text-white font-bold py-3 px-8 rounded-full shadow hover:shadow-lg transition-all">
+                            分享灵感 <i class="fa fa-paper-plane ml-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">旅行目的地选择器</h3>
+                    <p class="text-gray-400">帮助你找到最适合的旅行目的地，让每一次旅行都充满惊喜！</p>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-facebook"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-weixin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-4">快速链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#destinations" class="text-gray-400 hover:text-white transition-colors">目的地</a></li>
+                        <li><a href="#preferences" class="text-gray-400 hover:text-white transition-colors">偏好选择</a></li>
+                        <li><a href="#comparison" class="text-gray-400 hover:text-white transition-colors">目的地对比</a></li>
+                        <li><a href="#inspiration" class="text-gray-400 hover:text-white transition-colors">旅行灵感</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-4">联系我们</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center">
+                            <i class="fa fa-envelope text-gray-400 mr-2"></i>
+                            <a href="mailto:info@travelselector.com" class="text-gray-400 hover:text-white transition-colors">charliechen97@hotmail.com</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fa fa-phone text-gray-400 mr-2"></i>
+                            <a href="tel:+86123456789" class="text-gray-400 hover:text-white transition-colors">+86 123 456 789</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fa fa-map-marker text-gray-400 mr-2"></i>
+                            <span class="text-gray-400">Shanghai IFC Tower 55F</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-400">&copy; 2025 Charlie PRV CO. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 目的地数据
+        const destinations = {
+            japan: {
+                name: "日本",
+                color: "#FF9EBB",
+                image: "https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/926375594844618756~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=F5cRjR%2BOCMDkMHxDhIAcFkklMw4%3D",
+                description: "日本是一个位于东亚的岛国，以其独特的文化、美丽的自然风光和先进的科技而闻名。从繁华的东京都市到宁静的京都古寺，从北海道的雪景到冲绳的海滩，日本提供了多样化的旅行体验。",
+                highlights: ["樱花观赏", "温泉体验", "传统文化", "美食探索", "购物天堂"],
+                seasons: {
+                    spring: "樱花盛开，是游览日本的最佳季节之一",
+                    summer: "适合海滩度假和高山避暑",
+                    autumn: "枫叶美景，气候宜人",
+                    winter: "滑雪胜地，温泉与雪景的完美结合"
+                },
+                score: {
+                    culture: 9,
+                    nature: 8,
+                    food: 9,
+                    shopping: 8,
+                    adventure: 7,
+                    relaxation: 8
+                },
+                details: {
+                    bestTime: "春季 (3-5月)、秋季 (9-11月)",
+                    cost: "较高",
+                    language: "日语",
+                    visa: "中等",
+                    transport: "高"
+                }
+            },
+            korea: {
+                name: "韩国",
+                color: "#87CEEB",
+                image: "https://p26-doubao-search-sign.byteimg.com/mosaic-legacy/dd8000281751ba8674b~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=shPw0bXKQNuiNarVn%2FSpFk4gFfg%3D",
+                description: "韩国是一个位于朝鲜半岛南部的国家，融合了古老的传统文化和现代的都市生活。首尔作为韩国的首都，是一个充满活力的大都市，而济州岛则以其美丽的自然风光吸引着众多游客。",
+                highlights: ["韩流文化", "历史古迹", "美食体验", "购物天堂", "自然风光"],
+                seasons: {
+                    spring: "樱花盛开，气候宜人",
+                    summer: "适合海滩度假和音乐节",
+                    autumn: "枫叶美景，适合户外活动",
+                    winter: "滑雪胜地，冬季庆典"
+                },
+                score: {
+                    culture: 8,
+                    nature: 7,
+                    food: 8,
+                    shopping: 9,
+                    adventure: 6,
+                    relaxation: 7
+                },
+                details: {
+                    bestTime: "春季 (4-6月)、秋季 (9-11月)",
+                    cost: "中等",
+                    language: "韩语",
+                    visa: "中等",
+                    transport: "高"
+                }
+            },
+            vietnam: {
+                name: "越南",
+                color: "#90EE90",
+                image: "https://p26-doubao-search-sign.byteimg.com/labis/53f306fad99c2f5be63762ae5f3b4741~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261735&x-signature=%2B0QByc4kt%2Fd%2Bx6%2FKCfBncshqDtI%3D",
+                description: "越南是一个位于东南亚的国家，以其美丽的自然风光、丰富的历史文化和美味的食物而闻名。从北部的下龙湾到南部的湄公河三角洲，越南提供了多样化的旅行体验。",
+                highlights: ["下龙湾", "海滩度假", "美食探索", "历史古迹", "自然风光"],
+                seasons: {
+                    spring: "气候宜人，适合游览北部地区",
+                    summer: "适合海滩度假，但南部可能有雨季",
+                    autumn: "气候宜人，适合全境游览",
+                    winter: "北部可能较冷，但适合游览南部地区"
+                },
+                score: {
+                    culture: 7,
+                    nature: 9,
+                    food: 8,
+                    shopping: 6,
+                    adventure: 8,
+                    relaxation: 7
+                },
+                details: {
+                    bestTime: "冬季 (11-2月)、春季 (3-4月)",
+                    cost: "较低",
+                    language: "越南语",
+                    visa: "容易",
+                    transport: "中等"
+                }
+            },
+            thailand: {
+                name: "泰国",
+                color: "#FFD700",
+                image: "https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/2270680094861033514~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=zXllbQHvT0n7Nn4BFZ9Y%2FtZL%2Fww%3D",
+                description: "泰国是一个位于东南亚的国家，以其丰富的文化、美丽的海滩和美味的食物而闻名。泰国人民以其热情好客而著称，被称为'微笑的国度'。从繁华的曼谷到宁静的清迈，从美丽的普吉岛到文化古城 Ayutthaya，泰国提供了多样化的旅行体验。",
+                highlights: ["佛教寺庙", "海滩度假", "美食探索", "文化体验", "购物天堂"],
+                seasons: {
+                    spring: "热季，适合前往北部地区",
+                    summer: "雨季，但价格较低，游客较少",
+                    autumn: "雨季末期，天气开始转凉",
+                    winter: "凉季，是游览泰国的最佳季节"
+                },
+                score: {
+                    culture: 9,
+                    nature: 8,
+                    food: 9,
+                    shopping: 7,
+                    adventure: 7,
+                    relaxation: 9
+                },
+                details: {
+                    bestTime: "凉季 (11-2月)",
+                    cost: "中等",
+                    language: "泰语",
+                    visa: "容易",
+                    transport: "中等"
+                }
+            },
+            northeast: {
+                name: "中国东北",
+                color: "#87CEEB",
+                image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/937555171373088799~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1777261743&x-signature=JNbC45Sxmdat9sBZOzlSiJ7RkoY%3D",
+                description: "中国东北包括辽宁、吉林和黑龙江三个省份，以其寒冷的冬季、美丽的雪景和独特的文化而闻名。从哈尔滨的冰雪大世界到长白山的天池，从沈阳的故宫到大连的海滩，东北地区提供了多样化的旅行体验。",
+                highlights: ["冰雪景观", "温泉体验", "历史文化", "美食探索", "自然风光"],
+                seasons: {
+                    spring: "气候宜人，适合游览",
+                    summer: "凉爽，适合避暑",
+                    autumn: "枫叶美景，气候宜人",
+                    winter: "冰雪景观，是游览东北的最佳季节"
+                },
+                score: {
+                    culture: 7,
+                    nature: 9,
+                    food: 8,
+                    shopping: 7,
+                    adventure: 8,
+                    relaxation: 7
+                },
+                details: {
+                    bestTime: "冬季 (12-2月)",
+                    cost: "中等",
+                    language: "中文",
+                    visa: "无需签证",
+                    transport: "高"
+                }
+            }
+        };
+
+        // 用户选择的偏好
+        let userPreferences = {
+            interests: [],
+            season: null,
+            budget: null,
+            duration: null
+        };
+
+        // 选择的对比目的地
+        let selectedCompareDestinations = [];
+
+        // DOM 元素加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 移动端菜单切换
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // 偏好标签点击事件
+            const preferenceTags = document.querySelectorAll('.preference-tag');
+            preferenceTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const preferenceType = this.getAttribute('data-preference');
+                    
+                    // 处理兴趣标签（可多选）
+                    if (['culture', 'nature', 'food', 'shopping', 'adventure', 'relaxation'].includes(preferenceType)) {
+                        this.classList.toggle('active');
+                        this.classList.toggle('bg-primary');
+                        this.classList.toggle('text-white');
+                        
+                        if (this.classList.contains('active')) {
+                            userPreferences.interests.push(preferenceType);
+                        } else {
+                            userPreferences.interests = userPreferences.interests.filter(item => item !== preferenceType);
+                        }
+                    } 
+                    // 处理季节、预算、时长标签（单选）
+                    else {
+                        // 移除同类型标签的选中状态
+                        document.querySelectorAll(`.preference-tag[data-preference="${preferenceType.split('-')[0]}"]`).forEach(t => {
+                            t.classList.remove('active', 'bg-primary', 'text-white');
+                        });
+                        
+                        // 设置当前标签为选中状态
+                        this.classList.add('active', 'bg-primary', 'text-white');
+                        
+                        // 更新用户偏好
+                        if (['spring', 'summer', 'autumn', 'winter'].includes(preferenceType)) {
+                            userPreferences.season = preferenceType;
+                        } else if (['budget', 'mid-range', 'luxury'].includes(preferenceType)) {
+                            userPreferences.budget = preferenceType;
+                        } else if (['short', 'medium', 'long'].includes(preferenceType)) {
+                            userPreferences.duration = preferenceType;
+                        }
+                    }
+                    
+                    // 启用推荐按钮（至少选择一个兴趣）
+                    const recommendButton = document.getElementById('recommend-button');
+                    if (userPreferences.interests.length > 0) {
+                        recommendButton.disabled = false;
+                    } else {
+                        recommendButton.disabled = true;
+                    }
+                });
+            });
+            
+            // 推荐按钮点击事件
+            const recommendButton = document.getElementById('recommend-button');
+            recommendButton.addEventListener('click', function() {
+                // 根据用户偏好计算推荐分数
+                const recommendations = calculateRecommendations();
+                
+                // 显示推荐结果
+                displayRecommendations(recommendations);
+                
+                // 滚动到结果区域
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // 查看所有按钮点击事件
+            const viewAllButton = document.getElementById('view-all-button');
+            viewAllButton.addEventListener('click', function() {
+                document.getElementById('destinations').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // 目的地详情按钮点击事件
+            const viewDetailsButtons = document.querySelectorAll('.view-details');
+            viewDetailsButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const destinationId = this.getAttribute('data-destination');
+                    showDestinationDetails(destinationId);
+                });
+            });
+            
+            // 关闭模态框按钮点击事件
+            const closeModalButton = document.getElementById('close-modal');
+            closeModalButton.addEventListener('click', function() {
+                document.getElementById('destination-modal').classList.add('hidden');
+            });
+            
+            // 目的地选择器点击事件
+            const destinationSelectors = document.querySelectorAll('.destination-selector');
+            destinationSelectors.forEach(selector => {
+                selector.addEventListener('click', function() {
+                    const checkbox = this.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                    
+                    const destinationId = this.getAttribute('data-destination');
+                    if (checkbox.checked) {
+                        // 最多选择3个目的地进行对比
+                        if (selectedCompareDestinations.length >= 3) {
+                            alert('最多只能选择3个目的地进行对比');
+                            checkbox.checked = false;
+                            return;
+                        }
+                        selectedCompareDestinations.push(destinationId);
+                    } else {
+                        selectedCompareDestinations = selectedCompareDestinations.filter(id => id !== destinationId);
+                    }
+                    
+                    // 启用对比按钮（至少选择2个目的地）
+                    const compareButton = document.getElementById('compare-button');
+                    if (selectedCompareDestinations.length >= 2) {
+                        compareButton.disabled = false;
+                    } else {
+                        compareButton.disabled = true;
+                    }
+                });
+            });
+            
+            // 对比按钮点击事件
+            const compareButton = document.getElementById('compare-button');
+            compareButton.addEventListener('click', function() {
+                // 显示对比结果
+                displayComparisonResults();
+                
+                // 滚动到对比结果区域
+                document.getElementById('comparison-results').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // 添加灵感按钮点击事件
+            const addInspirationButton = document.getElementById('add-inspiration-button');
+            addInspirationButton.addEventListener('click', function() {
+                document.getElementById('inspiration-modal').classList.remove('hidden');
+            });
+            
+            // 关闭灵感模态框按钮点击事件
+            const closeInspirationModalButton = document.getElementById('close-inspiration-modal');
+            closeInspirationModalButton.addEventListener('click', function() {
+                document.getElementById('inspiration-modal').classList.add('hidden');
+            });
+            
+            // 灵感表单提交事件
+            const inspirationForm = document.getElementById('inspiration-form');
+            inspirationForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 获取表单数据
+                const destination = document.getElementById('inspiration-destination').value;
+                const title = document.getElementById('inspiration-title').value;
+                const description = document.getElementById('inspiration-description').value;
+                
+                // 简单验证
+                if (!destination || !title || !description) {
+                    alert('请填写完整的表单信息');
+                    return;
+                }
+                
+                // 模拟提交成功
+                alert('感谢分享你的旅行灵感！');
+                document.getElementById('inspiration-modal').classList.add('hidden');
+                inspirationForm.reset();
+            });
+            
+            // 图片上传区域点击事件
+            const imageUploadArea = document.querySelector('#inspiration-modal .border-dashed');
+            const imageInput = document.getElementById('inspiration-image');
+            
+            imageUploadArea.addEventListener('click', function() {
+                imageInput.click();
+            });
+            
+            // 图片选择事件
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const fileName = this.files[0].name;
+                    document.querySelector('#inspiration-modal .text-gray-500').textContent = `已选择: ${fileName}`;
+                }
+            });
+        });
+
+        // 根据用户偏好计算推荐分数
+        function calculateRecommendations() {
+            const recommendations = [];
+            
+            // 遍历所有目的地
+            for (const [id, destination] of Object.entries(destinations)) {
+                let score = 0;
+                
+                // 根据兴趣计算分数
+                userPreferences.interests.forEach(interest => {
+                    score += destination.score[interest];
+                });
+                
+                // 根据季节调整分数
+                if (userPreferences.season) {
+                    // 冬季适合日本和中国东北
+                    if (userPreferences.season === 'winter' && (id === 'japan' || id === 'northeast')) {
+                        score += 2;
+                    }
+                    // 春季适合日本和韩国
+                    else if (userPreferences.season === 'spring' && (id === 'japan' || id === 'korea')) {
+                        score += 2;
+                    }
+                    // 夏季适合越南和泰国
+                    else if (userPreferences.season === 'summer' && (id === 'vietnam' || id === 'thailand')) {
+                        score += 2;
+                    }
+                    // 秋季适合日本和韩国
+                    else if (userPreferences.season === 'autumn' && (id === 'japan' || id === 'korea')) {
+                        score += 2;
+                    }
+                }
+                
+                // 根据预算调整分数
+                if (userPreferences.budget) {
+                    // 经济实惠适合越南
+                    if (userPreferences.budget === 'budget' && id === 'vietnam') {
+                        score += 2;
+                    }
+                    // 中等预算适合韩国、泰国和中国东北
+                    else if (userPreferences.budget === 'mid-range' && (id === 'korea' || id === 'thailand' || id === 'northeast')) {
+                        score += 2;
+                    }
+                    // 豪华享受适合日本
+                    else if (userPreferences.budget === 'luxury' && id === 'japan') {
+                        score += 2;
+                    }
+                }
+                
+                // 根据旅行时长调整分数
+                if (userPreferences.duration) {
+                    // 短期适合日本和韩国
+                    if (userPreferences.duration === 'short' && (id === 'japan' || id === 'korea')) {
+                        score += 2;
+                    }
+                    // 中期适合所有目的地
+                    else if (userPreferences.duration === 'medium') {
+                        score += 1;
+                    }
+                    // 长期适合所有目的地
+                    else if (userPreferences.duration === 'long') {
+                        score += 2;
+                    }
+                }
+                
+                recommendations.push({
+                    id,
+                    name: destination.name,
+                    score,
+                    image: destination.image,
+                    description: destination.description
+                });
+            }
+            
+            // 按分数排序
+            recommendations.sort((a, b) => b.score - a.score);
+            
+            return recommendations;
+        }
+
+        // 显示推荐结果
+        function displayRecommendations(recommendations) {
+            const resultsSection = document.getElementById('results');
+            const resultsContainer = document.getElementById('recommendation-results');
+            
+            // 清空容器
+            resultsContainer.innerHTML = '';
+            
+            // 添加推荐结果
+            for (let i = 0; i < 3; i++) {
+                const destination = recommendations[i];
+                const destinationData = destinations[destination.id];
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl overflow-hidden shadow-lg group';
+                card.innerHTML = `
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="${destination.image}" 
+                             alt="${destination.name}" 
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute top-4 right-4 bg-white bg-opacity-80 rounded-full px-3 py-1 text-sm font-bold text-primary">
+                            匹配度: ${Math.round((destination.score / 60) * 100)}%
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-4">
+                            <h3 class="text-xl font-bold text-white">${destination.name}</h3>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-gray-600 text-sm mb-4">${destination.description.substring(0, 100)}...</p>
+                        <div class="flex justify-between items-center">
+                            <button class="view-details text-primary font-medium text-sm hover:underline flex items-center" data-destination="${destination.id}">
+                                查看详情 <i class="fa fa-angle-right ml-1"></i>
+                            </button>
+                            <div class="flex items-center">
+                                <i class="fa fa-star text-yellow-400"></i>
+                                <span class="ml-1 text-gray-600">${(destination.score / 10).toFixed(1)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContainer.appendChild(card);
+            }
+            
+            // 添加查看详情按钮点击事件
+            const viewDetailsButtons = resultsContainer.querySelectorAll('.view-details');
+            viewDetailsButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const destinationId = this.getAttribute('data-destination');
+                    showDestinationDetails(destinationId);
+                });
+            });
+            
+            // 显示结果区域
+            resultsSection.classList.remove('hidden');
+        }
+
+        // 显示目的地详情
+        function showDestinationDetails(destinationId) {
+            const destination = destinations[destinationId];
+            const modal = document.getElementById('destination-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            // 构建模态框内容
+            let content = `
+                <div class="relative h-64 overflow-hidden rounded-t-xl mb-6">
+                    <img src="${destination.image}" 
+                         alt="${destination.name}" 
+                         class="w-full h-full object-cover">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-overlay p-6">
+                        <h2 class="text-3xl font-bold text-white">${destination.name}</h2>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">目的地介绍</h3>
+                    <p class="text-gray-600">${destination.description}</p>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">特色体验</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            `;
+            
+            // 添加特色体验
+            destination.highlights.forEach(highlight => {
+                content += `
+                    <div class="flex items-center bg-gray-50 rounded-lg px-3 py-2">
+                        <i class="fa fa-check-circle text-primary mr-2"></i>
+                        <span>${highlight}</span>
+                    </div>
+                `;
+            });
+            
+            content += `
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">最佳旅行季节</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            `;
+            
+            // 添加季节信息
+            for (const [season, description] of Object.entries(destination.seasons)) {
+                let seasonName = '';
+                let seasonIcon = '';
+                
+                switch (season) {
+                    case 'spring':
+                        seasonName = '春季';
+                        seasonIcon = 'fa-pagelines';
+                        break;
+                    case 'summer':
+                        seasonName = '夏季';
+                        seasonIcon = 'fa-sun-o';
+                        break;
+                    case 'autumn':
+                        seasonName = '秋季';
+                        seasonIcon = 'fa-leaf';
+                        break;
+                    case 'winter':
+                        seasonName = '冬季';
+                        seasonIcon = 'fa-snowflake-o';
+                        break;
+                }
+                
+                content += `
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fa ${seasonIcon} text-primary mr-2"></i>
+                            <h4 class="font-medium">${seasonName}</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">${description}</p>
+                    </div>
+                `;
+            }
+            
+            content += `
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">目的地评分</h3>
+                    <div class="h-64">
+                        <canvas id="destination-radar-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">旅行信息</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-gray-500 text-sm">最佳旅行时间</p>
+                                <p class="font-medium">${destination.details.bestTime}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">人均消费</p>
+                                <p class="font-medium">${destination.details.cost}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">语言</p>
+                                <p class="font-medium">${destination.details.language}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">签证难度</p>
+                                <p class="font-medium">${destination.details.visa}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">交通便利性</p>
+                                <p class="font-medium">${destination.details.transport}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button class="bg-primary text-white font-bold py-3 px-8 rounded-full shadow hover:shadow-lg transition-all">
+                        开始规划行程 <i class="fa fa-calendar-plus-o ml-2"></i>
+                    </button>
+                </div>
+            `;
+            
+            // 更新模态框内容
+            modalContent.innerHTML = content;
+            
+            // 显示模态框
+            modal.classList.remove('hidden');
+            
+            // 创建雷达图
+            setTimeout(() => {
+                const ctx = document.getElementById('destination-radar-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['文化体验', '自然风光', '美食探索', '购物血拼', '冒险活动', '休闲放松'],
+                        datasets: [{
+                            label: destination.name,
+                            data: [
+                                destination.score.culture,
+                                destination.score.nature,
+                                destination.score.food,
+                                destination.score.shopping,
+                                destination.score.adventure,
+                                destination.score.relaxation
+                            ],
+                            backgroundColor: `${destination.color}33`,
+                            borderColor: destination.color,
+                            borderWidth: 2,
+                            pointBackgroundColor: destination.color,
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: destination.color
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 10,
+                                ticks: {
+                                    stepSize: 2
+                                }
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        // 显示对比结果
+        function displayComparisonResults() {
+            const comparisonResults = document.getElementById('comparison-results');
+            
+            // 显示对比结果区域
+            comparisonResults.classList.remove('hidden');
+            
+            // 更新表格标题
+            for (let i = 0; i < selectedCompareDestinations.length; i++) {
+                const destinationId = selectedCompareDestinations[i];
+                const destination = destinations[destinationId];
+                const headerCell = document.getElementById(`compare-destination-${i+1}`);
+                
+                headerCell.textContent = destination.name;
+                headerCell.style.color = destination.color;
+                headerCell.classList.remove('hidden');
+            }
+            
+            // 隐藏未使用的表格列
+            for (let i = selectedCompareDestinations.length; i < 5; i++) {
+                const headerCell = document.getElementById(`compare-destination-${i+1}`);
+                headerCell.classList.add('hidden');
+                
+                const cells = document.querySelectorAll(`td:nth-child(${i+2})`);
+                cells.forEach(cell => {
+                    cell.classList.add('hidden');
+                });
+            }
+            
+            // 更新表格内容
+            for (let i = 0; i < selectedCompareDestinations.length; i++) {
+                const destinationId = selectedCompareDestinations[i];
+                const destination = destinations[destinationId];
+                
+                document.getElementById(`season-${i+1}`).textContent = destination.details.bestTime;
+                document.getElementById(`cost-${i+1}`).textContent = destination.details.cost;
+                document.getElementById(`language-${i+1}`).textContent = destination.details.language;
+                document.getElementById(`visa-${i+1}`).textContent = destination.details.visa;
+                document.getElementById(`transport-${i+1}`).textContent = destination.details.transport;
+            }
+            
+            // 创建雷达图
+            setTimeout(() => {
+                const ctx = document.getElementById('radar-chart').getContext('2d');
+                
+                // 准备数据
+                const datasets = selectedCompareDestinations.map(destinationId => {
+                    const destination = destinations[destinationId];
+                    return {
+                        label: destination.name,
+                        data: [
+                            destination.score.culture,
+                            destination.score.nature,
+                            destination.score.food,
+                            destination.score.shopping,
+                            destination.score.adventure,
+                            destination.score.relaxation
+                        ],
+                        backgroundColor: `${destination.color}33`,
+                        borderColor: destination.color,
+                        borderWidth: 2,
+                        pointBackgroundColor: destination.color,
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: destination.color
+                    };
+                });
+                
+                // 创建图表
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['文化体验', '自然风光', '美食探索', '购物血拼', '冒险活动', '休闲放松'],
+                        datasets
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 10,
+                                ticks: {
+                                    stepSize: 2
+                                }
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+    </script>
+</body>
+</html>
